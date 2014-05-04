@@ -2,36 +2,27 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace g711audio
+namespace g711
 {
-    /// <summary>
-    /// Turns 8-bit A-law bytes back into 16-bit PCM values.
-    /// </summary>
+    // Turns 8-bit A-law bytes back into 16-bit PCM values.
     public static class ALawDecoder
     {
-        /// <summary>
-        /// An array where the index is the a-law input, and the value is
-        /// the 16-bit PCM result.
-        /// </summary>
+
+        // An array where the index is the a-law input, and the value is the 16-bit PCM result.
         private static short[] aLawToPcmMap;
 
         static ALawDecoder()
         {
             aLawToPcmMap = new short[256];
             for (byte i = 0; i < byte.MaxValue; i++)
-                aLawToPcmMap[i] = decode(i);
+                aLawToPcmMap[i] = Decode(i);
         }
-
-        /// <summary>
-        /// Decode one a-law byte. For internal use only.
-        /// </summary>
-        /// <param name="alaw">The encoded a-law byte</param>
-        /// <returns>A short containing the 16-bit result</returns>
-        private static short decode(byte alaw)
+       
+        // Returns a short containing the 16-bit  decoded result
+        private static short Decode(byte alaw)
         {
             //Invert every other bit, and the sign bit (0xD5 = 1101 0101)
             alaw ^= 0xD5;
-
             //Pull out the value of the sign bit
             int sign = alaw & 0x80;
             //Pull out and shift over the value of the exponent
@@ -63,21 +54,12 @@ namespace g711audio
             return (short)(sign == 0 ? data : -data);
         }
 
-        /// <summary>
-        /// Decode one a-law byte
-        /// </summary>
-        /// <param name="alaw">The encoded a-law byte</param>
-        /// <returns>A short containing the 16-bit result</returns>
+        
         public static short ALawDecode(byte alaw)
         {
             return aLawToPcmMap[alaw];
         }
 
-        /// <summary>
-        /// Decode an array of a-law encoded bytes
-        /// </summary>
-        /// <param name="data">An array of a-law encoded bytes</param>
-        /// <returns>An array of shorts containing the results</returns>
         public static short[] ALawDecode(byte[] data)
         {
             int size = data.Length;
@@ -87,12 +69,6 @@ namespace g711audio
             return decoded;
         }
 
-        /// <summary>
-        /// Decode an array of a-law encoded bytes
-        /// </summary>
-        /// <param name="data">An array of a-law encoded bytes</param>
-        /// <param name="decoded">An array of shorts containing the results</param>
-        /// <remarks>Same as the other method that returns an array of shorts</remarks>
         public static void ALawDecode(byte[] data, out short[] decoded)
         {
             int size = data.Length;
@@ -101,11 +77,7 @@ namespace g711audio
                 decoded[i] = aLawToPcmMap[data[i]];
         }
 
-        /// <summary>
-        /// Decode an array of a-law encoded bytes
-        /// </summary>
-        /// <param name="data">An array of a-law encoded bytes</param>
-        /// <param name="decoded">An array of bytes in Little-Endian format containing the results</param>
+        /// Returns An array of bytes in Little-Endian format containing the results
         public static void ALawDecode(byte[] data, out byte[] decoded)
         {
             int size = data.Length;

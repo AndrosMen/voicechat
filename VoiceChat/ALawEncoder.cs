@@ -2,34 +2,27 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace g711audio
+namespace g711
 {
-    /// <summary>
-    /// Turns 16-bit linear PCM values into 8-bit A-law bytes.
-    /// </summary>
+   
+    // Turns 16-bit linear PCM values into 8-bit A-law bytes.
     public class ALawEncoder
     {
         public const int MAX = 0x7fff; //maximum that can be held in 15 bits
 
-        /// <summary>
-        /// An array where the index is the 16-bit PCM input, and the value is
-        /// the a-law result.
-        /// </summary>
+
+        // An array where the index is the 16-bit PCM input, and the value is the a-law result.
         private static byte[] pcmToALawMap;
 
         static ALawEncoder()
         {
             pcmToALawMap = new byte[65536];
             for (int i = short.MinValue; i <= short.MaxValue; i++)
-                pcmToALawMap[(i & 0xffff)] = encode(i);
+                pcmToALawMap[(i & 0xffff)] = Encode(i);
         }
 
-        /// <summary>
-        /// Encode one a-law byte from a 16-bit signed integer. Internal use only.
-        /// </summary>
-        /// <param name="pcm">A 16-bit signed pcm value</param>
-        /// <returns>A a-law encoded byte</returns>
-        private static byte encode(int pcm)
+        // Encode one a-law byte from a 16-bit signed integer. 
+        private static byte Encode(int pcm)
         {
             //Get the sign bit.  Shift it for later use without further modification
             int sign = (pcm & 0x8000) >> 8;
@@ -78,31 +71,19 @@ namespace g711audio
             return (byte)(alaw ^ 0xD5);
         }
 
-        /// <summary>
-        /// Encode a pcm value into a a-law byte
-        /// </summary>
-        /// <param name="pcm">A 16-bit pcm value</param>
-        /// <returns>A a-law encoded byte</returns>
+     
+        // Encode a pcm value into a a-law byte
         public static byte ALawEncode(int pcm)
         {
             return pcmToALawMap[pcm & 0xffff];
         }
 
-        /// <summary>
-        /// Encode a pcm value into a a-law byte
-        /// </summary>
-        /// <param name="pcm">A 16-bit pcm value</param>
-        /// <returns>A a-law encoded byte</returns>
         public static byte ALawEncode(short pcm)
         {
             return pcmToALawMap[pcm & 0xffff];
         }
 
-        /// <summary>
-        /// Encode an array of pcm values
-        /// </summary>
-        /// <param name="data">An array of 16-bit pcm values</param>
-        /// <returns>An array of a-law bytes containing the results</returns>
+        
         public static byte[] ALawEncode(int[] data)
         {
             int size = data.Length;
@@ -112,11 +93,6 @@ namespace g711audio
             return encoded;
         }
 
-        /// <summary>
-        /// Encode an array of pcm values
-        /// </summary>
-        /// <param name="data">An array of 16-bit pcm values</param>
-        /// <returns>An array of a-law bytes containing the results</returns>
         public static byte[] ALawEncode(short[] data)
         {
             int size = data.Length;
@@ -126,11 +102,6 @@ namespace g711audio
             return encoded;
         }
 
-        /// <summary>
-        /// Encode an array of pcm values
-        /// </summary>
-        /// <param name="data">An array of bytes in Little-Endian format</param>
-        /// <returns>An array of a-law bytes containing the results</returns>
         public static byte[] ALawEncode(byte[] data)
         {
             int size = data.Length / 2;
@@ -140,11 +111,7 @@ namespace g711audio
             return encoded;
         }
 
-        /// <summary>
-        /// Encode an array of pcm values into a pre-allocated target array
-        /// </summary>
-        /// <param name="data">An array of bytes in Little-Endian format</param>
-        /// <param name="target">A pre-allocated array to receive the A-law bytes.  This array must be at least half the size of the source.</param>
+        // Encode an array of pcm values into a pre-allocated target array
         public static void ALawEncode(byte[] data, byte[] target)
         {
             int size = data.Length / 2;

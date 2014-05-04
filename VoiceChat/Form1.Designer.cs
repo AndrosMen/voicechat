@@ -1,4 +1,6 @@
-﻿namespace VoiceChat
+﻿using System.Security.AccessControl;
+
+namespace VoiceChat
 {
     partial class Form1
     {
@@ -32,10 +34,8 @@
             this.btnEndCall = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.label3 = new System.Windows.Forms.Label();
             this.txtCallToIP = new System.Windows.Forms.TextBox();
             this.txtName = new System.Windows.Forms.TextBox();
-            this.cmbCodecs = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // btnCall
@@ -50,6 +50,7 @@
             // 
             // btnEndCall
             // 
+            this.btnEndCall.Enabled = false;
             this.btnEndCall.Location = new System.Drawing.Point(180, 217);
             this.btnEndCall.Name = "btnEndCall";
             this.btnEndCall.Size = new System.Drawing.Size(75, 23);
@@ -76,15 +77,6 @@
             this.label2.TabIndex = 3;
             this.label2.Text = "Name";
             // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 165);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(41, 13);
-            this.label3.TabIndex = 4;
-            this.label3.Text = "Codec:";
-            // 
             // txtCallToIP
             // 
             this.txtCallToIP.Location = new System.Drawing.Point(78, 49);
@@ -99,33 +91,20 @@
             this.txtName.Size = new System.Drawing.Size(167, 20);
             this.txtName.TabIndex = 6;
             // 
-            // cmbCodecs
-            // 
-            this.cmbCodecs.FormattingEnabled = true;
-            this.cmbCodecs.Items.AddRange(new object[] {
-            "None",
-            "A-Law",
-            "u-Law"});
-            this.cmbCodecs.Location = new System.Drawing.Point(78, 162);
-            this.cmbCodecs.Name = "cmbCodecs";
-            this.cmbCodecs.Size = new System.Drawing.Size(145, 21);
-            this.cmbCodecs.TabIndex = 7;
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 262);
-            this.Controls.Add(this.cmbCodecs);
             this.Controls.Add(this.txtName);
             this.Controls.Add(this.txtCallToIP);
-            this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.btnEndCall);
             this.Controls.Add(this.btnCall);
             this.Name = "Form1";
             this.Text = "Form1";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -137,10 +116,8 @@
         private System.Windows.Forms.Button btnEndCall;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox txtCallToIP;
         private System.Windows.Forms.TextBox txtName;
-        private System.Windows.Forms.ComboBox cmbCodecs;
     }
 }
 

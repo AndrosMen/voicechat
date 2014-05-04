@@ -3,43 +3,45 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.DirectX;
 using Microsoft.DirectX.DirectSound;
 using System.IO;
 using System.Threading;
 using System.Net.Sockets;
 using System.Net;
-using g711audio;
+using g711;
 
 namespace VoiceChat
 {
 
     public partial class Form1 : Form
     {
+        //DirectX requiered Variables
+        private Device device;
+        private Capture capture;
+        private WaveFormat waveFormat;
         private CaptureBufferDescription captureBufferDescription;
+        private BufferDescription playbackBufferDescription;
+        private SecondaryBuffer playbackBuffer;
+        private int bufferSize;
+
+     
         private AutoResetEvent autoResetEvent;
         private Notify notify;
-        private WaveFormat waveFormat;
-        private Capture capture;
-        private int bufferSize;
         private CaptureBuffer captureBuffer;
+       
+        //Socket programming      
         private UdpClient udpClient; //Listens and sends data on port 1550, used in synchronous mode.
-        private Device device;
-        private SecondaryBuffer playbackBuffer;
-        private BufferDescription playbackBufferDescription;
         private Socket clientSocket;
         private bool bStop; //Flag to end the Start and Receive threads.
         private IPEndPoint otherPartyIP; //IP of party we want to make a call.
         private EndPoint otherPartyEP;
         private volatile bool bIsCallActive; //Tells whether we have an active call.
-        private Vocoder vocoder;
         private byte[] byteData = new byte[1024]; //Buffer to store the data received.
         private volatile int nUdpClientFlag; //Flag used to close the udpClient socket.
-
-
+        private const int port = 1450;
 
         public Form1()
         {
@@ -52,18 +54,17 @@ namespace VoiceChat
             try
             {
                 device = new Device();
-                device.SetCooperativeLevel(this, CooperativeLevel.Normal);
+                device.SetCooperativeLevel(this.Handle, CooperativeLevel.Priority);
 
-                CaptureDevicesCollection captureDeviceCollection = new CaptureDevicesCollection();
-
+                //Gets the devices avaliable for recording sound
+                CaptureDevicesCollection captureDeviceCollection = new CaptureDevicesCollection(); 
+                //Sets the first Device as the one that will be recording 
                 DeviceInformation deviceInfo = captureDeviceCollection[0];
-
                 capture = new Capture(deviceInfo.DriverGuid);
 
                 short channels = 1; //Stereo.
                 short bitsPerSample = 16; //16Bit, alternatively use 8Bits.
                 int samplesPerSecond = 22050; //11KHz use 11025 , 22KHz use 22050, 44KHz use 44100 etc.
-
                 //Set up the wave format to be captured.
                 waveFormat = new WaveFormat();
                 waveFormat.Channels = channels;
@@ -72,12 +73,12 @@ namespace VoiceChat
                 waveFormat.BitsPerSample = bitsPerSample;
                 waveFormat.BlockAlign = (short) (channels*(bitsPerSample/(short) 8));
                 waveFormat.AverageBytesPerSecond = waveFormat.BlockAlign*samplesPerSecond;
-
+                //Set the buffer for recording with the wave format defined previously
                 captureBufferDescription = new CaptureBufferDescription();
-                captureBufferDescription.BufferBytes = waveFormat.AverageBytesPerSecond/5;
-                    //approx 200 milliseconds of PCM data.
+                captureBufferDescription.BufferBytes = waveFormat.AverageBytesPerSecond / 5;   //approx 200 milliseconds of PCM data.
                 captureBufferDescription.Format = waveFormat;
 
+                //Sets the buffer for playing the sounds 
                 playbackBufferDescription = new BufferDescription();
                 playbackBufferDescription.BufferBytes = waveFormat.AverageBytesPerSecond/5;
                 playbackBufferDescription.Format = waveFormat;
@@ -123,22 +124,8 @@ namespace VoiceChat
             try
             {
                 //Get the IP we want to call.
-                otherPartyIP = new IPEndPoint(IPAddress.Parse(txtCallToIP.Text), 1450);
+                otherPartyIP = new IPEndPoint(IPAddress.Parse(txtCallToIP.Text), port);
                 otherPartyEP = (EndPoint) otherPartyIP;
-
-                //Get the vocoder to be used.
-                if (cmbCodecs.SelectedText == "A-Law")
-                {
-                    vocoder = Vocoder.ALaw;
-                }
-                else if (cmbCodecs.SelectedText == "u-Law")
-                {
-                    vocoder = Vocoder.uLaw;
-                }
-                else if (cmbCodecs.SelectedText == "None")
-                {
-                    vocoder = Vocoder.None;
-                }
 
                 //Send an invite message.
                 SendMessage(Command.Invite, otherPartyEP);
@@ -192,7 +179,6 @@ namespace VoiceChat
                                 "VoiceChat", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                             {
                                 SendMessage(Command.OK, receivedFromEP);
-                                vocoder = msgReceived.vocoder;
                                 otherPartyEP = receivedFromEP;
                                 otherPartyIP = (IPEndPoint) receivedFromEP;
                                 InitializeCall();
@@ -281,23 +267,11 @@ namespace VoiceChat
 
                     //TODO: Fix this ugly way of initializing differently.
 
-                    //Choose the vocoder. And then send the data to other party at port 1550.
+                    //send the data to other party at port 1550.
 
-                    if (vocoder == Vocoder.ALaw)
-                    {
-                        byte[] dataToWrite = ALawEncoder.ALawEncode(memStream.GetBuffer());
-                        udpClient.Send(dataToWrite, dataToWrite.Length, otherPartyIP.Address.ToString(), 1550);
-                    }
-                    else if (vocoder == Vocoder.uLaw)
-                    {
-                        byte[] dataToWrite = MuLawEncoder.MuLawEncode(memStream.GetBuffer());
-                        udpClient.Send(dataToWrite, dataToWrite.Length, otherPartyIP.Address.ToString(), 1550);
-                    }
-                    else
-                    {
-                        byte[] dataToWrite = memStream.GetBuffer();
-                        udpClient.Send(dataToWrite, dataToWrite.Length, otherPartyIP.Address.ToString(), 1550);
-                    }
+                    byte[] dataToWrite = ALawEncoder.ALawEncode(memStream.GetBuffer());
+                    udpClient.Send(dataToWrite, dataToWrite.Length, otherPartyIP.Address.ToString(), 1550);
+                   
                 }
             }
             catch (Exception ex)
@@ -343,20 +317,10 @@ namespace VoiceChat
                     //the size to store the decompressed data.
                     byte[] byteDecodedData = new byte[byteData.Length * 2];
 
-                    //Decompress data using the proper vocoder.
-                    if (vocoder == Vocoder.ALaw)
-                    {
-                        ALawDecoder.ALawDecode(byteData, out byteDecodedData);
-                    }
-                    else if (vocoder == Vocoder.uLaw)
-                    {
-                        MuLawDecoder.MuLawDecode(byteData, out byteDecodedData);
-                    }
-                    else
-                    {
-                        byteDecodedData = new byte[byteData.Length];
-                        byteDecodedData = byteData;
-                    }
+                    //Decompress data using the proper decoder.
+                 
+                    ALawDecoder.ALawDecode(byteData, out byteDecodedData);
+                    
     
 
                     //Play the data received to the user.
@@ -460,8 +424,7 @@ namespace VoiceChat
 
                 msgToSend.strName = txtName.Text;   //Name of the user.
                 msgToSend.cmdCommand = cmd;         //Message to send.
-                msgToSend.vocoder = vocoder;        //Vocoder to be used.
-                
+            
                 byte[] message = msgToSend.ToByte();
 
                 //Send the message asynchronously.
@@ -473,16 +436,14 @@ namespace VoiceChat
             }
         }
 
-        private void VoiceChat_FormClosing(object sender, FormClosingEventArgs e)
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-
             if (bIsCallActive)
             {
-                UninitializeCall();
+                //UninitializeCall();
                 DropCall();
             }
         }
-
     }
 
     //The commands for interaction between the two parties.
@@ -494,30 +455,19 @@ namespace VoiceChat
         OK,     //Response to an invite message. OK is send to indicate that call is accepted.
         Null,   //No command.
     }
-
-    //Vocoder
-    enum Vocoder
-    {
-        ALaw,   //A-Law vocoder.
-        uLaw,   //u-Law vocoder.
-        None,   //Don't use any vocoder.
-    }
     
-
-   
+  
 
     class Data
     {
         public string strName;      //Name by which the client logs into the room.
         public Command cmdCommand;  //Command type (login, logout, send message, etc).
-        public Vocoder vocoder;
-
+       
         //Default constructor.
         public Data()
         {
             this.cmdCommand = Command.Null;
             this.strName = null;
-            vocoder = Vocoder.ALaw;
         }
 
         //Converts the bytes into an object of type Data.
